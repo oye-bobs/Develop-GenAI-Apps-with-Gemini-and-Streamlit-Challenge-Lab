@@ -1,6 +1,7 @@
 #!/bin/bash
-# Define color variables
+set -e  # Exit immediately if a command fails
 
+# Define color variables
 BLACK=`tput setaf 0`
 RED=`tput setaf 1`
 GREEN=`tput setaf 2`
@@ -32,9 +33,9 @@ RANDOM_BG_COLOR=${BG_COLORS[$RANDOM % ${#BG_COLORS[@]}]}
 
 #----------------------------------------------------start--------------------------------------------------#
 
-# Header with 
+# Header
 echo "${CYAN}${BOLD}╔════════════════════════════════════════════════════════╗${RESET}"
-echo "${CYAN}${BOLD}        Welcome to Dr abhishek Cloud tutorials       ${RESET}"
+echo "${CYAN}${BOLD}        Welcome to Dr Abhishek Cloud tutorials       ${RESET}"
 echo "${CYAN}${BOLD}╚════════════════════════════════════════════════════════╝${RESET}"
 echo
 echo "${BLUE}${BOLD}          Tutorial by Dr. Abhishek                       ${RESET}"
@@ -66,13 +67,14 @@ wget https://raw.githubusercontent.com/Itsabhishek7py/GoogleCloudSkillsboost/mai
 
 # Step 6: Upload chef.py to the Cloud Storage bucket
 echo "${CYAN}${BOLD}Uploading 'chef.py' to Cloud Storage bucket...${RESET}"
-gcloud storage cp chef.py gs://$DEVSHELL_PROJECT_ID-generative-ai/
-
-# Step 7: Set project and region variables
-echo "${GREEN}${BOLD}Setting GCP project and region variables...${RESET}"
 GCP_PROJECT=$(gcloud config get-value project)
-GCP_REGION=$(gcloud compute project-info describe \
---format="value(commonInstanceMetadata.items[google-compute-default-region])")
+GCP_REGION="us-central1"   # Explicit region
+BUCKET_NAME="${GCP_PROJECT}-generative-ai"
+gcloud storage buckets create gs://$BUCKET_NAME --location=$GCP_REGION || true
+gcloud storage cp chef.py gs://$BUCKET_NAME/
+
+# Step 7: Confirm project and region variables
+echo "${GREEN}${BOLD}Using project: $GCP_PROJECT and region: $GCP_REGION${RESET}"
 
 # Step 8: Create a virtual environment and install dependencies
 echo "${YELLOW}${BOLD}Setting up Python virtual environment...${RESET}"
@@ -91,8 +93,8 @@ nohup streamlit run chef.py \
 # Step 10: Create Artifact Repository
 echo "${BLUE}${BOLD}Creating Artifact Registry repository...${RESET}"
 AR_REPO='chef-repo'
-SERVICE_NAME='chef-streamlit-app' 
-gcloud artifacts repositories create "$AR_REPO" --location="$GCP_REGION" --repository-format=Docker
+SERVICE_NAME='chef-streamlit-app'
+gcloud artifacts repositories create "$AR_REPO" --location="$GCP_REGION" --repository-format=Docker || true
 
 # Step 11: Submit Cloud Build
 echo "${RED}${BOLD}Submitting Cloud Build...${RESET}"
@@ -105,7 +107,7 @@ gcloud run deploy "$SERVICE_NAME" \
   --image="$GCP_REGION-docker.pkg.dev/$GCP_PROJECT/$AR_REPO/$SERVICE_NAME" \
   --allow-unauthenticated \
   --region=$GCP_REGION \
-  --platform=managed  \
+  --platform=managed \
   --project=$GCP_PROJECT \
   --set-env-vars=GCP_PROJECT=$GCP_PROJECT,GCP_REGION=$GCP_REGION
 
@@ -119,7 +121,7 @@ echo
 echo "${MAGENTA}${BOLD}Cloud Run Service is available at: ${RESET}""$CLOUD_RUN_URL"
 echo
 
-# Completion message with Dr. Abhishek branding
+# Completion message
 echo "${GREEN}${BOLD}╔════════════════════════════════════════════════════════╗${RESET}"
 echo "${GREEN}${BOLD}             Lab Completed Successfully!                ${RESET}"
 echo "${GREEN}${BOLD}╚════════════════════════════════════════════════════════╝${RESET}"
@@ -131,13 +133,9 @@ echo
 
 # Cleanup function
 remove_files() {
-    # Loop through all files in the current directory
     for file in *; do
-        # Check if the file name starts with "gsp", "arc", or "shell"
         if [[ "$file" == gsp* || "$file" == arc* || "$file" == shell* ]]; then
-            # Check if it's a regular file (not a directory)
             if [[ -f "$file" ]]; then
-                # Remove the file and echo the file name
                 rm "$file"
                 echo "File removed: $file"
             fi
@@ -147,4 +145,3 @@ remove_files() {
 
 # Execute cleanup
 remove_files
-cd
