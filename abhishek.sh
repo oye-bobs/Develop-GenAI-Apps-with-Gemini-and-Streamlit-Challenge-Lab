@@ -33,7 +33,6 @@ RANDOM_BG_COLOR=${BG_COLORS[$RANDOM % ${#BG_COLORS[@]}]}
 
 #----------------------------------------------------start--------------------------------------------------#
 
-# Header
 echo "${CYAN}${BOLD}╔════════════════════════════════════════════════════════╗${RESET}"
 echo "${CYAN}${BOLD}        Welcome to Dr Abhishek Cloud tutorials       ${RESET}"
 echo "${CYAN}${BOLD}╚════════════════════════════════════════════════════════╝${RESET}"
@@ -47,9 +46,13 @@ echo "${RANDOM_BG_COLOR}${RANDOM_TEXT_COLOR}${BOLD}Starting Execution${RESET}"
 echo "${CYAN}${BOLD}Enabling Cloud Run API...${RESET}"
 gcloud services enable run.googleapis.com
 
-# Step 2: Clone the repository
+# Step 2: Clone the repository (skip if already exists)
 echo "${GREEN}${BOLD}Cloning Google Cloud generative AI repository...${RESET}"
-git clone https://github.com/GoogleCloudPlatform/generative-ai.git
+if [ ! -d "generative-ai" ]; then
+  git clone https://github.com/GoogleCloudPlatform/generative-ai.git
+else
+  echo "Repo already exists, skipping clone."
+fi
 
 # Step 3: Navigate to the required directory
 echo "${YELLOW}${BOLD}Navigating to the 'gemini-streamlit-cloudrun' directory...${RESET}"
@@ -59,24 +62,24 @@ cd generative-ai/gemini/sample-apps/gemini-streamlit-cloudrun
 echo "${BLUE}${BOLD}Removing existing files: Dockerfile, chef.py, requirements.txt...${RESET}"
 rm -rf Dockerfile chef.py requirements.txt
 
-# Step 5: Download required files from updated URLs
+# Step 5: Download required files
 echo "${RED}${BOLD}Downloading required files...${RESET}"
 wget https://raw.githubusercontent.com/Itsabhishek7py/GoogleCloudSkillsboost/main/Develop%20GenAI%20Apps%20with%20Gemini%20and%20Streamlit%20Challenge%20Lab/chef.py
 wget https://raw.githubusercontent.com/Itsabhishek7py/GoogleCloudSkillsboost/main/Develop%20GenAI%20Apps%20with%20Gemini%20and%20Streamlit%20Challenge%20Lab/Dockerfile
 wget https://raw.githubusercontent.com/Itsabhishek7py/GoogleCloudSkillsboost/main/Develop%20GenAI%20Apps%20with%20Gemini%20and%20Streamlit%20Challenge%20Lab/requirements.txt
 
-# Step 6: Upload chef.py to the Cloud Storage bucket
+# Step 6: Upload chef.py to Cloud Storage bucket
 echo "${CYAN}${BOLD}Uploading 'chef.py' to Cloud Storage bucket...${RESET}"
 GCP_PROJECT=$(gcloud config get-value project)
-GCP_REGION="us-central1"   # Explicit region
+GCP_REGION="us-west1"   # Explicit region
 BUCKET_NAME="${GCP_PROJECT}-generative-ai"
 gcloud storage buckets create gs://$BUCKET_NAME --location=$GCP_REGION || true
 gcloud storage cp chef.py gs://$BUCKET_NAME/
 
-# Step 7: Confirm project and region variables
+# Step 7: Confirm project and region
 echo "${GREEN}${BOLD}Using project: $GCP_PROJECT and region: $GCP_REGION${RESET}"
 
-# Step 8: Create a virtual environment and install dependencies
+# Step 8: Create virtual environment and install dependencies
 echo "${YELLOW}${BOLD}Setting up Python virtual environment...${RESET}"
 python3 -m venv gemini-streamlit
 source gemini-streamlit/bin/activate
